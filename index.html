@@ -1,0 +1,190 @@
+<html>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+
+<style>
+
+input.slider[type=range] {
+  -webkit-appearance: slider-vertical;   
+  width:50px;
+}
+input.slider[type=range]::-webkit-slider-runnable-track{
+}
+.column{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+</style>
+<body>
+    <div style="display: flex;margin-bottom:10px;">
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>32HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>64HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>125HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>250HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>500HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>1000HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>2000HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>4000HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>8000HZ</label></div>
+        <div class="column"><span class="slider-value">0</span><input type="range" value="0" min="-12" max="12" class="slider"><label>16000HZ</label></div>
+    </div>
+
+
+    <select id="mySelect">
+      <option value="normal" selected>正常</option>
+      <option value="gudian">古典</option>
+      <option value="chaozhongdiyin">超重低音</option>
+      <option value="liuxing">流行</option>
+      <option value="yaogun">摇滚</option>
+      <option value="jueshi">爵士</option>
+      <option value="wanmeirensheng">完美人声</option>
+      <option value="xianchang">现场还原</option>
+    </select>
+
+    <button id="btn">播放</button>
+
+
+    <div style="display: flex; justify-content: space-between;width:400px;margin-top:10px;">
+      <div id="currentTime">0</div>
+      <input type="range" id="progress" min="0" value="0" style="width:300px;">
+      <div id="maxTime">--</div>
+    </div>
+</body> 
+
+
+<script>
+    // return;
+// 分割频带个数
+const numBands = 10;
+
+// 每个频带的增益
+const bandGains = new Array(numBands).fill(0);
+
+// 初始化音频上下文
+const audioCtx = new AudioContext();
+let sourceNode = audioCtx.createBufferSource();
+// 创建音频源
+// const source = audioCtx.createMediaElementSource(document.querySelector('audio'));/
+
+// 创建滤波器
+const filters = [];
+const frequencies = [  32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+frequencies.forEach((frequency, index) => {
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'peaking';
+  filter.frequency.value = frequency;
+  filter.Q.value = 1;
+  filter.gain.value = 0;
+  filters.push(filter);
+});
+
+
+// 监听均衡器调整
+const sliders = document.querySelectorAll('.slider');
+const sliderValues = document.querySelectorAll('.slider-value');
+sliders.forEach((slider, index) => {
+  const {value} = slider;
+  console.log({value});
+  slider.addEventListener('input', () => {
+    bandGains[index] = parseFloat(slider.value);
+    filters[index].gain.value = bandGains[index];
+    sliderValues[index].innerHTML = slider.value;
+  });
+});
+
+// 来自网易云音乐
+const gudian = [4,4,3,2,-1,-1,0,1,3,4];       //古典
+const normal = [0,0,0,0,0,0,0,0,0,0];         //正常
+const chaozhongdiyin = [6,5,8,2,0,0,0,0,0,0]; //超重低音
+const liuxing = [-1,-1,0,1,4,3,1,0,0,1]   //流行
+const yaogun = [4,3,3,1,0,0,0,1,2,4]   //摇滚
+const jueshi = [3,3,1,2,-1,-1,0,1,2,4]   //爵士
+const wanmeirensheng = [-2,-3,-3,0,1,4,3,2,-1,-2] //完美人声
+const xianchang = [5,5,6,0,-1,0,3,4,6,5] //现场还原
+const typeDict = {
+  gudian,
+  normal,
+  chaozhongdiyin,
+  liuxing,
+  yaogun,
+  jueshi,
+  wanmeirensheng,
+  xianchang
+};
+let aniN = null;
+let decodedAudioDataTemp = null;
+async function getMp3ArrayBuffer(url){
+    return fetch(url).then((r) => r.arrayBuffer());
+}
+async function decode(arrayBuffer) {
+    console.log({arrayBuffer});
+    return audioCtx.decodeAudioData(arrayBuffer);
+}
+let start = 0;
+async function play(currentTime=0) {
+    sourceNode = audioCtx.createBufferSource()
+    sourceNode.buffer = decodedAudioData;
+    progress.max = decodedAudioData.duration;
+    document.querySelector('#maxTime').innerHTML = formatTime(decodedAudioData.duration);
+    // 连接音频图
+    connect();
+    sourceNode.start(0,currentTime);
+    if(aniN){cancelAnimationFrame(aniN)}
+    start = Number(currentTime);
+    progress.value = Number(currentTime);
+    setProgressInterval();
+}
+function setProgressInterval(){
+  const gap = 1/60;
+  progress.value = start+gap;
+  start = start+gap;
+  document.querySelector('#currentTime').innerHTML = formatTime(start);
+  aniN = requestAnimationFrame(setProgressInterval);
+}
+function connect(){
+  sourceNode.connect(filters[0]);
+  for (let i = 0; i < numBands - 1; i++) {
+    filters[i].connect(filters[i+1]);
+  }
+  filters[numBands-1].connect(audioCtx.destination);
+}
+const select = document.querySelector('#mySelect')
+select.addEventListener('change',()=>{
+  const {value} = select;
+  console.log({value});
+  typeDict[value].forEach((item,index)=>{
+    sliders[index].value = item;
+    bandGains[index] = parseFloat(item);
+    filters[index].gain.value = bandGains[index];
+    sliderValues[index].innerHTML = item;
+  })
+})
+
+
+
+const btn = document.querySelector('#btn');
+btn.addEventListener('click',async()=>{
+  const mp3 = 'http://localhost/2674590056.mp3';
+  const musicArrayBuffer = await this.getMp3ArrayBuffer(mp3);
+  decodedAudioData = await this.decode(musicArrayBuffer);
+  // sourceNode.stop();
+  play();
+})
+const preZero = (val)=>{
+  return val>10?val:'0'+val; 
+}
+// 60=>1:00
+const formatTime = (val)=>{
+  const m = Math.floor(val/60);
+  const s = Math.floor(val-m*60);
+  return m+':'+preZero(s);
+}
+
+const progress = document.querySelector('#progress');
+progress.addEventListener('input',()=>{
+  sourceNode.stop();
+  play(progress.value)
+})
+</script>
+</html>
