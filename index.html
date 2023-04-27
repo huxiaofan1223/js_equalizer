@@ -165,7 +165,7 @@ select.addEventListener('change',()=>{
 
 const btn = document.querySelector('#btn');
 btn.addEventListener('click',async()=>{
-  const mp3 = 'http://localhost/2674590056.mp3';
+  const mp3 = '/2674590056.mp3';
   const musicArrayBuffer = await this.getMp3ArrayBuffer(mp3);
   decodedAudioData = await this.decode(musicArrayBuffer);
   // sourceNode.stop();
