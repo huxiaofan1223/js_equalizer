@@ -173,10 +173,11 @@ btn.addEventListener('click',async()=>{
   // sourceNode.stop();
   play();
 })
+// 9=>'09'
 const preZero = (val)=>{
   return val>10?val:'0'+val; 
 }
-// 60=>1:00
+// 60=>'1:00'
 const formatTime = (val)=>{
   const m = Math.floor(val/60);
   const s = Math.floor(val-m*60);
@@ -185,7 +186,6 @@ const formatTime = (val)=>{
 
 const progress = document.querySelector('#progress');
 progress.addEventListener('input',()=>{
-  // sourceNode.stop();
   play(progress.value)
 })
 </script>
