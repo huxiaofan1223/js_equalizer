@@ -123,7 +123,8 @@ async function decode(arrayBuffer) {
 }
 let start = 0;
 async function play(currentTime=0) {
-    sourceNode = audioCtx.createBufferSource()
+    try{sourceNode.stop();}catch(err){}
+    sourceNode = audioCtx.createBufferSource();
     sourceNode.buffer = decodedAudioData;
     progress.max = decodedAudioData.duration;
     document.querySelector('#maxTime').innerHTML = formatTime(decodedAudioData.duration);
@@ -137,6 +138,7 @@ async function play(currentTime=0) {
 }
 function setProgressInterval(){
   const gap = 1/60;
+  if(start>Number(progress.max) && aniN){cancelAnimationFrame(aniN);return;};
   progress.value = start+gap;
   start = start+gap;
   document.querySelector('#currentTime').innerHTML = formatTime(start);
@@ -165,7 +167,7 @@ select.addEventListener('change',()=>{
 
 const btn = document.querySelector('#btn');
 btn.addEventListener('click',async()=>{
-  const mp3 = 'http://localhost/2674590056.mp3';
+  const mp3 = './2674590056.mp3';
   const musicArrayBuffer = await this.getMp3ArrayBuffer(mp3);
   decodedAudioData = await this.decode(musicArrayBuffer);
   // sourceNode.stop();
@@ -183,7 +185,7 @@ const formatTime = (val)=>{
 
 const progress = document.querySelector('#progress');
 progress.addEventListener('input',()=>{
-  sourceNode.stop();
+  // sourceNode.stop();
   play(progress.value)
 })
 </script>
